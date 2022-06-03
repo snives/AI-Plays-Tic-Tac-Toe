@@ -71,10 +71,12 @@ namespace AIPlaysTicTacToe
         }
 
         //Allow the player to make a move, returns true if player has won
-        public bool Move(int x, int y, int player)
+        public bool Move(int action, int player)
         {
+            var xy = ActionToXY(action);
+
             //Register player move
-            Set(x, y, player);
+            Set(xy.Item1, xy.Item2, player);
 
             //Evaluate the board  
                         //Horizontals
@@ -99,8 +101,8 @@ namespace AIPlaysTicTacToe
         /// <returns></returns>
         public Tuple<int, int> ActionToXY(int action)
         {
-            int y = (action - 1) / Width;
-            int x = (action - 1) % Width;
+            int y = action / Width;
+            int x = action % Width;
             return new Tuple<int, int>(x, y);
         }
 
@@ -112,7 +114,7 @@ namespace AIPlaysTicTacToe
         /// <returns></returns>
         public int XYToAction(int x, int y)
         {
-            return (y * Width + x) + 1;
+            return (y * Width + x);
         }
 
 
