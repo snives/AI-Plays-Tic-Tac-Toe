@@ -59,15 +59,15 @@ namespace AIPlaysTicTacToe
             return ba.Get(x * Width + y) ? 1 : ba.Get((Width * Height) + x * Width + y) ? 2 : 0;
         }
 
-        public List<Tuple<int,int>> GetAvailableMoves()
+        public List<int> GetAvailableMoves()
         {
-            var tuples = new List<Tuple<int, int>>();
+            var available = new List<int>();
             for (int x = 0; x < Width; x++)
                 for (int y = 0; y < Height; y++)
                     if (Get(x, y) == 0)
-                        tuples.Add(new Tuple<int, int>(x, y));
+                        available.Add(XYToAction(x,y));
 
-            return tuples;
+            return available;
         }
 
         //Allow the player to make a move, returns true if player has won
@@ -91,7 +91,29 @@ namespace AIPlaysTicTacToe
 
             return won;
         }
-        
+
+        /// <summary>
+        /// Maps an action to an X,Y coordinate
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public Tuple<int, int> ActionToXY(int action)
+        {
+            int y = (action - 1) / Width;
+            int x = (action - 1) % Width;
+            return new Tuple<int, int>(x, y);
+        }
+
+        /// <summary>
+        /// Maps an X,Y coordinate to an action
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public int XYToAction(int x, int y)
+        {
+            return (y * Width + x) + 1;
+        }
 
 
         //We will override the object.Equals and GetHashCode function so we can treat this object as a value type.

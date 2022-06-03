@@ -11,7 +11,13 @@ using System.Threading;
 /// 
 /// </summary>
 
+//Bug: It seems as though hits on the Q table are nearly always missed.  This is essentially data sparsity.
+// The theoretical combinations of the board being filled is 9! because There are 9 possible moves for the first play,
+// 8 possible moves for the 2nd play, so on and so forth.  
 
+
+//TODO: Rewrite the Q table in terms of boardhash and action.  Action will now be 1-9.
+//
 
 namespace AIPlaysTicTacToe
 {
@@ -41,11 +47,12 @@ namespace AIPlaysTicTacToe
             int trainingEpochs = 10000;
             double exploration = 1.0;  //epsillon greedy
             double min_exploration = 0.05;
-            double explorationDecay = 0.9997;
-            double learnRate = 0.2;
+            double explorationDecay = 0.99999;
+            double learnRate = 0.01;  //Effectively a window of 100 samples.
             double discountRate = 0.99;
             bool interactive = false;
             int winCount = 0;
+            int gameCount = 0;
 
             var rnd = new Random();
 
@@ -53,7 +60,12 @@ namespace AIPlaysTicTacToe
             //Loop a number of epochs
             for (int epoch=1; epoch <= trainingEpochs; epoch++)
             {
-                
+                //Reset wincount every 10k games
+                if (epoch % 10000 == 0)
+                {
+                    winCount = 0;
+                    gameCount = 0;
+                }
 
                 //Create a new game
                 var board = new Board(3, 3);
@@ -62,11 +74,11 @@ namespace AIPlaysTicTacToe
                 if (exploration > min_exploration)
                     exploration = exploration * explorationDecay;
 
-                Console.WriteLine($"Epoch {epoch}   Explor: {exploration:0.0000}   win ratio: {(double)winCount / epoch:0.00}");
+                
 
                 while (true)
                 {
-                    Tuple<int, int> action = null;
+                    int action;
 
                     //Step 1: Decide between exploration and exploitation
                     if (rnd.NextDouble() < exploration)
@@ -94,10 +106,30 @@ namespace AIPlaysTicTacToe
                     //Do we need a negative reward for losing?
 
                     //Step 3: Update the Q policy
+                    //The Q table is simple.  It stores the average reward for taking a move, given a state.
+                    //Each cell is a running average.  Thus, it should be updated incrementally.
+                    //One such method which doesn't require storing totals is the EWMA.
+                    //If n is the window of samples to average over, e.g. 100.
+                    //avg = avg * (n-1)/n + sample / n
+                    //avg = avg * (1-0.01) + sample * 0.01
+                    
+                    //So we can see the parallels to the Q function
+                    //Q = Q * (1-learnRate) + (reward + best_future_reward * discountRate) * learnRate
+                    //Its simply the moving average of this moves reward plus a discounted reward of the best next move.
+                    //This has the effect of pulling forward the future rewards into the past actions, ultimately to the first move.
+                    //It should average those future rewards into all past actions which were taken in a given game.
+
+                    //So for tic-tac-toe, the next state will vary randomly by player2's move.  However no reward is ever given on P2's moves
+                    //So my Q table never learns.  So instead I will store all moves in the game, and push down the reward
+                    //to each state of the board, applying a discount at each step.  Here, applying means averaging.
+                    //This way, at game 2, we already have a best move to play, if we were to consult the Q table.
+                    //10,000 games later, I should have a fairly stable Q table.
+
+
                     //agent1.UpdatePolicy(board1, action, reward);
                     var maxReward = GetMaxRewardForBoard(board, 1, Q);
                     var previousQ = Q.ContainsKey(previousBoardHash) ? Q[previousBoardHash] : 0.0;
-                    Q[previousBoardHash] = (1-learnRate) * previousQ + learnRate * (reward + discountRate * maxReward.Item1);
+                    Q[previousBoardHash] = previousQ * (1-learnRate) + learnRate * (reward + discountRate * maxReward.Item1);
 
 
 
@@ -148,11 +180,11 @@ namespace AIPlaysTicTacToe
                     else
                         reward = 0.0;
 
-                    if (player2_won || cat)
-                    {
-                        var boardHash = board.GetHashCode();
-                        Q[boardHash] = reward;
-                    }
+                    //if (player2_won || cat)
+                    //{
+                    //    var boardHash = board.GetHashCode();
+                    //    Q[boardHash] = reward;
+                    //}
                     
                     //What is it learning?  It's learning that the board state is a loss.  It's learning that by not going to where player 2 went, it is losing.
                     //So agent1 should receive a positive reward for having gone where player2 went to win.  Except this board represents player2 having gone there
@@ -184,6 +216,9 @@ namespace AIPlaysTicTacToe
 
                 } // end of epoch
 
+                gameCount++;
+
+                Console.WriteLine($"Epoch {epoch}   Explor: {exploration:0.0000}   win ratio: {(double)winCount / gameCount:0.00}");
 
                 //if (interactive)
                 //{
@@ -192,10 +227,10 @@ namespace AIPlaysTicTacToe
                 //    Console.Clear();
                 //}
 
-               
+
                 //Thread.Sleep(10);
 
-                if (!interactive && epoch > 9950)
+                if (!interactive && epoch > 349950)
                     interactive = true;
                 
                 
@@ -211,7 +246,7 @@ namespace AIPlaysTicTacToe
 
         //TODO: This is probably an agent method
         //Find the maximum reward for all possible moves from the given board, by the given player
-        public static Tuple<double, Tuple<int,int>> GetMaxRewardForBoard(Board board, int player, Dictionary<int, double> Q)
+        public static Tuple<double, int> GetMaxRewardForBoard(Board board, int player, Dictionary<int, double> Q)
         {
             double r_max = double.MinValue;
             Tuple<int, int> move_max = null;
@@ -289,5 +324,8 @@ namespace AIPlaysTicTacToe
                 Console.WriteLine("\n--------- --------- --------- ");
             }
         }
+
+
+        
     }
 }
