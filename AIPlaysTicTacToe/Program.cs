@@ -44,12 +44,12 @@ namespace AIPlaysTicTacToe
             //Agent Q table
             Q = new double[1<<18, 9];
 
-            int trainingEpochs = 40000;
+            int trainingEpochs = 50000;
             double exploration = 1.0;  //epsillon greedy
             double min_exploration = 0.01;
             double explorationDecay = 0.9999;
             double learnRate = 0.01;  //Effectively a window of 100 samples.
-            double discountRate = 0.99;
+            double discountRate = 0.90;
             bool interactive = false;
             int winCount = 0;
             int gameCount = 0;
@@ -87,7 +87,7 @@ namespace AIPlaysTicTacToe
                     {
                         //explore - Select a random move from available moves
                         var moves = board.GetAvailableMoves();
-                        int selection = rnd.Next(moves.Count - 1);
+                        int selection = rnd.Next(moves.Count);
                         action = moves[selection];
                     }
                     else
@@ -149,8 +149,6 @@ namespace AIPlaysTicTacToe
                             Console.WriteLine("Won");
                         else if (P1_cat)
                             Console.WriteLine("Cat");
-
-                        Console.ReadKey(true);
                     }
 
                     //If game is over then end
@@ -223,14 +221,12 @@ namespace AIPlaysTicTacToe
                         DrawBoard(board);
 
                         if (P2_won)
-                        {
-                            Console.WriteLine("lose");
-                        } else if (P2_cat)
-                        {
-                            Console.WriteLine("cat");
-                        }
+                            Console.WriteLine("Lost");
+                        else if (P2_cat)
+                            Console.WriteLine("Cat");
+                        else
+                            Console.ReadKey(true);
 
-                        Console.ReadKey(true);
                     }
 
                     //End of game
@@ -240,8 +236,10 @@ namespace AIPlaysTicTacToe
                 } // end of epoch
 
                 gameCount++;
-                Console.WriteLine($"Epoch {epoch}   Explor: {exploration:0.0000}   win ratio: {(double)winCount / gameCount:0.00}");
+                Console.WriteLine($"Epoch {epoch}   Explor: {exploration:0.0000}   win ratio: {(double)winCount / gameCount:0.000}");
 
+                if (interactive)
+                    Console.ReadKey(true);
 
                 //Now propagate backwards the rewards from the games plays, now that we have the reward
                 history.Reverse();
@@ -266,7 +264,7 @@ namespace AIPlaysTicTacToe
 
                 //Thread.Sleep(10);
 
-                if (!interactive && epoch > 39950)
+                if (!interactive && epoch > 49950)
                     interactive = true;
                 
                 
@@ -342,7 +340,7 @@ namespace AIPlaysTicTacToe
                     {
                         //get Q reward for each board, action
                         var reward = Q[board.GetHashCode(), board.XYToAction(x, y)];
-                        Console.Write("{0:0.0000}   ", reward);
+                        Console.Write("{0:0.0000}    ", reward);
                     } else
                     {
                         Console.Write("n/a       ");
