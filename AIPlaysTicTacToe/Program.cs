@@ -8,16 +8,35 @@ using System.Threading;
 
 /// <summary>
 /// This project will demonstrate the use of model free reinforcement learning using a tabular solution.
+/// Reinforcement learning works by being rewarded for achieving a goal.  It then randomly
+/// takes actions, according to the rules of the game, and gains experience, observing what rewards
+/// it gets from taking what actions.  The amount of time it spends exploring new actions vs the time
+/// it leverages its own experience is the exploration/exploitation tradeoff.  As we train we will
+/// reduce the exploration to only some small amount, so it mostly uses its experience.
+/// 
 /// 
 /// </summary>
 
-//Bug: It seems as though hits on the Q table are nearly always missed.  This is essentially data sparsity.
-// The theoretical combinations of the board being filled is 9! because There are 9 possible moves for the first play,
-// 8 possible moves for the 2nd play, so on and so forth.  
+//The Q table is simple.  It stores the average reward for taking a move, given a state.
+//Each cell is a running average.  It would costly from a space aspect to store the sum of its rewards and the total times it received them.
+//But if we can update our average reward incrementally then we can avoid storing those.
+//One such method which doesn't require storing totals is the EWMA.
+//If n is the window of samples to average over, e.g. 100.
+//avg = avg* (n - 1) / n + sample / n
+//avg = avg * (1 - 0.01) + sample * 0.01
 
+//So we can see the parallels to the Q function
+//Q = Q* (1 - learnRate) + (reward + best_future_reward* discountRate) * learnRate
+//It's simply the moving average of this moves reward plus a discounted reward of the best next move.
+//This has the effect of pulling forward the future rewards into the past actions, ultimately to the first move.
+//It should average those future rewards into all past actions which were taken in a given game.
 
-//TODO: Rewrite the Q table in terms of boardhash and action.  Action will now be 1-9.
-//
+//So for tic - tac - toe, the next state will vary randomly by player2's move.  However no reward is ever given on P2's moves
+//So my Q table never learns.So instead I will store all moves in a single game, and push down the reward
+//to each state of the board, applying a discount at each step.  Here "applying" means averaging.
+//This way, at game 2, we already have a best move to play, if we were to consult the Q table.
+//10,000 games later, I should have a fairly stable Q table.
+
 
 namespace AIPlaysTicTacToe
 {
@@ -26,45 +45,36 @@ namespace AIPlaysTicTacToe
         //Agent Q table - boards X actions
         public static double[,] Q;
 
+        public static Random rnd = new Random();
+
         static void Main(string[] args)
         {
-            //First we define the board environment, and define a method that observes its state.
-            //var board1 = new Board(3, 3);
-            //board1.Set(0, 0, 1);
-            //board1.Set(1, 1, 1);
-            //board1.Set(2, 2, 1);
-            //board1.Set(1, 0, 2);
-
-            //DrawBoard(board1);
-
-            //var moves = board1.GetAvailableMoves();
-            //foreach (var move in moves)
-            //    Console.Write($"({move.Item1}, {move.Item2}) ");
+            //First we define the training variables
 
             //Agent Q table
             Q = new double[1<<18, 9];
 
-            int trainingEpochs = 50000;
+            int trainingEpochs = 90000;
             double exploration = 1.0;  //epsillon greedy
             double min_exploration = 0.01;
-            double explorationDecay = 0.9999;
+            double explorationDecay = 0.99995;
             double learnRate = 0.01;  //Effectively a window of 100 samples.
-            double discountRate = 0.90;
+            double discountRate = 0.95;
             bool interactive = false;
             int winCount = 0;
             int gameCount = 0;
 
-            var rnd = new Random();
-
-
-            //Loop a number of epochs
+            //Loop for a number of training epochs
             for (int epoch=1; epoch < trainingEpochs; epoch++)
             {
-                //Reset wincount every 10k games
+                //Reset win count every 10k games
                 if (epoch % 10000 == 0)
                 {
                     winCount = 0;
                     gameCount = 0;
+
+                    //Also reseed our random table
+                    rnd = new Random();
                 }
 
                 //Create a new game
@@ -106,40 +116,6 @@ namespace AIPlaysTicTacToe
 
                     //In this flavor of RL I will only assess rewards at the end of the game.
 
-
-
-                    //Generate a reward if we won.
-                    //double reward = won ? 1.0 : cat ? 0.5: 0.0;
-                    //Do we need a negative reward for losing?
-
-                    //Step 3: Update the Q policy
-                    //The Q table is simple.  It stores the average reward for taking a move, given a state.
-                    //Each cell is a running average.  Thus, it should be updated incrementally.
-                    //One such method which doesn't require storing totals is the EWMA.
-                    //If n is the window of samples to average over, e.g. 100.
-                    //avg = avg * (n-1)/n + sample / n
-                    //avg = avg * (1-0.01) + sample * 0.01
-
-                    //So we can see the parallels to the Q function
-                    //Q = Q * (1-learnRate) + (reward + best_future_reward * discountRate) * learnRate
-                    //Its simply the moving average of this moves reward plus a discounted reward of the best next move.
-                    //This has the effect of pulling forward the future rewards into the past actions, ultimately to the first move.
-                    //It should average those future rewards into all past actions which were taken in a given game.
-
-                    //So for tic-tac-toe, the next state will vary randomly by player2's move.  However no reward is ever given on P2's moves
-                    //So my Q table never learns.  So instead I will store all moves in the game, and push down the reward
-                    //to each state of the board, applying a discount at each step.  Here, applying means averaging.
-                    //This way, at game 2, we already have a best move to play, if we were to consult the Q table.
-                    //10,000 games later, I should have a fairly stable Q table.
-
-
-                    //agent1.UpdatePolicy(board1, action, reward);
-                    //var maxReward = GetMaxRewardForBoard(board, 1, Q);
-                    //var previousQ = Q.ContainsKey(previousBoardHash) ? Q[previousBoardHash] : 0.0;
-                    //Q[previousBoardHash] = previousQ * (1-learnRate) + learnRate * (reward + discountRate * maxReward.Item1);
-
-
-
                     if (interactive)
                     {
                         Console.Clear();
@@ -160,17 +136,11 @@ namespace AIPlaysTicTacToe
                         break;
                     } else if (P1_cat)
                     {
-                        reward = 0.5;
+                        reward = 0.1;
                         //Console.WriteLine("cat");
                         break;
                     }
-
-
-                    //Store these variables after player 1 moved, to update it negatively if player 2 wins.
-                    //maxReward = GetMaxRewardForBoard(board, 1, Q);
-                    //previousBoardHash = board.GetHashCode();  
-                    //previousQ = Q.ContainsKey(previousBoardHash) ? Q[previousBoardHash] : 0.0;
-
+                    
                     //Now have player 2 play
                     //Maybe player 2 plays randomly.
                     var movesP2 = board.GetAvailableMoves();
@@ -184,36 +154,10 @@ namespace AIPlaysTicTacToe
                     }
                     else if (P2_cat)
                     {
-                        reward = 0.5;
+                        reward = 0.1;
                     }
 
                     //Notice we don't store history of p2 moves.
-
-
-                    //I think I should update agent1 Q table even though it hasn't moved because the board has been updated
-                    //if (player2_won)
-                    //    reward = -1.0;
-                    //else if (cat)
-                    //     = -0.1;
-                    //else
-                    //    reward = 0.0;
-
-                    //if (player2_won || cat)
-                    //{
-                    //    var boardHash = board.GetHashCode();
-                    //    Q[boardHash] = reward;
-                    //}
-
-                    //What is it learning?  It's learning that the board state is a loss.  It's learning that by not going to where player 2 went, it is losing.
-                    //So agent1 should receive a positive reward for having gone where player2 went to win.  Except this board represents player2 having gone there
-                    //only.  Honestly, I don't think I implemented the Q learning table correctly.  Storing only the environment doesn't allow us to evaluate the
-                    //reward associated with each possible action.  
-
-                    //Continuing with this parlance of negative reward.  If this position resulted in a loss then this board reward should definitely be -1 all the time.
-                    //So if its a cat, the game also ends, so its score can be slightly negative.
-                    //But if the game continues how does this cell approach its limit?  Should this board state change?
-
-
 
                     if (interactive)
                     {
@@ -250,35 +194,14 @@ namespace AIPlaysTicTacToe
                     reward = reward * discountRate;
                 }
 
-
-
-
-
-                //if (interactive)
-                //{
-                //    //DrawBoard(board);
-                //    Console.ReadKey(true);
-                //    Console.Clear();
-                //}
-
-
-                //Thread.Sleep(10);
-
-                if (!interactive && epoch > 49950)
+                if (!interactive && epoch > 89950)
                     interactive = true;
-                
-                
             }
-
-
-            
-
-
 
             Console.ReadKey();
         }
 
-        //TODO: This is probably an agent method
+        //TODO: This is probably an agent method.  Abstract this to an Agent class.
 
         //Find the maximum reward for all possible moves from the given board, by the given player
         //returns the action and its reward.
@@ -310,7 +233,6 @@ namespace AIPlaysTicTacToe
             //If multiple actions have the same reward we should randomly select from those.
             if (candidates.Count > 1)
             {
-                var rnd = new Random();
                 int randomSelection = rnd.Next(candidates.Count - 1);
                 action_max = moves[randomSelection];
             }
@@ -319,6 +241,10 @@ namespace AIPlaysTicTacToe
         }
 
 
+        /// <summary>
+        /// Utility method to draw the board.  Also shows the Q learning table rewards.
+        /// </summary>
+        /// <param name="board"></param>
         public static void DrawBoard(Board board)
         {
             var map = " XO".ToCharArray();
