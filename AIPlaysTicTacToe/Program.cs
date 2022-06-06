@@ -75,33 +75,24 @@ using System.Threading;
 
 
 //Let's refactor this code and abstract the agent class.
-
+//Agent has now be abstracted
 
 namespace AIPlaysTicTacToe
 {
     class Program
     {
-        
-
-        public static Random rnd = new Random();
-
         static void Main(string[] args)
         {
             //First we define the training variables
-          
-
             int trainingEpochs = 90000;
-            double exploration = 1.0;  //epsillon greedy
-            double min_exploration = 0.01;
-            double explorationDecay = 0.99995;
-            double learnRate = 0.01;  //Effectively a window of 100 samples. (alpha)
-            double discountRate = 0.90;
             bool interactive = false;
             int winCount = 0;
             int gameCount = 0;
 
             //Player 1
             var agent1 = new Agent();
+            var agent2 = new Agent();
+
 
             //Loop for a number of training epochs
             for (int epoch=1; epoch < trainingEpochs; epoch++)
@@ -111,23 +102,14 @@ namespace AIPlaysTicTacToe
                 {
                     winCount = 0;
                     gameCount = 0;
-
-                    //Also reseed our random table
-                    rnd = new Random();
                 }
 
                 //Create a new game
                 var board = new Board(3, 3);
                 agent1.NewGame();
+                agent2.NewGame();
 
                 
-
-                //Reduce exploration rate exponentially until it reaches min_exploration.
-                if (exploration > min_exploration)
-                    agent1.Exploration = agent1.Exploration * explorationDecay;
-
-                var reward = 0.0;
-
                 while (true)
                 {
                     //Ask player 1 to move
@@ -148,42 +130,51 @@ namespace AIPlaysTicTacToe
                             Console.WriteLine("Won");
                         else if (P1_cat)
                             Console.WriteLine("Cat");
+                        else
+                            Console.ReadKey(true);
                     }
 
                     //If game is over then end
                     if (P1_won)
                     {
-                        reward = 1.0;
+                        agent1.AssignReward(1.0);
+                        agent2.AssignReward(-1.0);
                         winCount++;
                         break;
                     } else if (P1_cat)
                     {
-                        reward = 0.0;
+                        agent1.AssignReward(0.0);
+                        agent2.AssignReward(0.0);
                         break;
                     }
-                    
+
                     //Now have player 2 play
-                    //Maybe player 2 plays randomly.
-                    var movesP2 = board.GetAvailableMoves();
-                    int selection2 = rnd.Next(movesP2.Count - 1);
-                    var P2_won = board.Move(movesP2[selection2], 2);
-                    var P2_cat = movesP2.Count == 1;
+                    //Player 2 plays randomly.
+                    //var movesP2 = board.GetAvailableMoves();
+                    //int selection2 = rnd.Next(movesP2.Count - 1);
+                    //var P2_won = board.Move(movesP2[selection2], 2);
+                    //var P2_cat = movesP2.Count == 1;
+
+                    //Player 2 is also an RL agent
+                    int action2 = agent2.DecideMove(board);
+                    var P2_won = board.Move(action2, 2);
+                    var P2_cat = board.GetAvailableMoves().Count == 0;
 
                     if (P2_won)
                     {
-                        reward = -1.0;
+                        agent1.AssignReward(-1.0);
+                        agent2.AssignReward(1.0);
                     }
                     else if (P2_cat)
                     {
-                        reward = 0.0;
+                        agent1.AssignReward(0.0);
+                        agent2.AssignReward(1.0);
                     }
-
-                    //Notice we don't store history of p2 moves.
 
                     if (interactive)
                     {
                         Console.Clear();
-                        DrawBoard(board, agent1);
+                        DrawBoard(board, agent2);
 
                         if (P2_won)
                             Console.WriteLine("Lost");
@@ -191,7 +182,6 @@ namespace AIPlaysTicTacToe
                             Console.WriteLine("Cat");
                         else
                             Console.ReadKey(true);
-
                     }
 
                     //End of game
@@ -200,7 +190,7 @@ namespace AIPlaysTicTacToe
 
                 } // end of epoch
 
-                agent1.AssignReward(reward);
+                
 
                 gameCount++;
                 Console.WriteLine($"Epoch {epoch}   Explor: {agent1.Exploration:0.0000}   win ratio: {(double)winCount / gameCount:0.000}");

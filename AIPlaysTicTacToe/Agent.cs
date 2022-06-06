@@ -15,8 +15,31 @@ namespace AIPlaysTicTacToe
 
         //Assigns an id to a player. e.g. player 1. 
         public int PlayerId { get; set; }
+
+        /// <summary>
+        /// The window of observations to average over. =1/n
+        /// Works like an EWMA.
+        /// </summary>
         public double Alpha { get; set; } = 0.01;
+        
+        /// <summary>
+        /// The ratio of play being exploration or exploitation.  1.0=always explore, 0.0 = always exploit
+        /// </summary>
         public double Exploration { get; set; } = 1.0;
+
+        /// <summary>
+        /// The minimum exploration rate
+        /// </summary>
+        public double MinExploration { get; set; } = 0.01;
+
+        /// <summary>
+        /// The rate of decay of the exploration rate.  (1-1/n)
+        /// </summary>
+        public double ExplorationDecay { get; set; } = 0.99994;
+
+        /// <summary>
+        /// The rate rewards are discounted in its history of moves.
+        /// </summary>
         public double RewardDiscountRate { get; set; } = 0.9;
 
         //Store state, move history
@@ -68,6 +91,11 @@ namespace AIPlaysTicTacToe
         public void NewGame()
         {
             _history.Clear();
+
+            //Adjust our exploration/exploitation ratio
+            //Reduce exploration rate exponentially until it reaches min exploration rate.
+            if (Exploration > MinExploration)
+                Exploration *= ExplorationDecay;
         }
 
         //Find the maximum reward for all possible moves from the given board, by the given player
