@@ -147,5 +147,23 @@ namespace AIPlaysTicTacToe
             return BitConverter.ToInt32(b, 0);
         }
 
+
+        /// <summary>
+        /// Utility method to draw the board.
+        /// </summary>
+        /// <param name="board"></param>
+        public void DrawBoard(Board board)
+        {
+            var map = " XO".ToCharArray();
+
+            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 0)], map[board.Get(1, 0)], map[board.Get(2, 0)]);
+            Console.WriteLine("-----------");
+            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 1)], map[board.Get(1, 1)], map[board.Get(2, 1)]);
+            Console.WriteLine("-----------");
+            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 2)], map[board.Get(1, 2)], map[board.Get(2, 2)]);
+            Console.WriteLine("\n");
+
+        }
+
     }
 }

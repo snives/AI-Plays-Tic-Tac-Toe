@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AIPlaysTicTacToe
 {
-    public class Agent
+    public class Agent : IAgent
     {
         //Agent Q table - boards X actions
         public double[,] Q;
@@ -148,5 +148,33 @@ namespace AIPlaysTicTacToe
                 reward = reward * RewardDiscountRate;
             }
         }
+
+        /// <summary>
+        /// Displays the Q values (State->Action Map)
+        /// </summary>
+        /// <param name="board"></param>
+        public void DisplayQTable(Board board)
+        {
+            //Display a heatmap
+            for (int y = 0; y < board.Height; y++)
+            {
+                for (int x = 0; x < board.Width; x++)
+                {
+                    if (board.Get(x, y) == 0)
+                    {
+                        //get Q reward for each board, action
+                        var reward = Q[board.GetHashCode(), board.XYToAction(x, y)];
+                        Console.Write("{0:G5} ", reward);
+                    }
+                    else
+                    {
+                        Console.Write("n/a       ");
+                    }
+
+                }
+                Console.WriteLine("\n--------- --------- --------- ");
+            }
+        }
+
     }
 }

@@ -8,9 +8,13 @@ using System.Threading;
 
 /// <summary>
 /// This project will demonstrate the use of model free reinforcement learning using a tabular solution.
-/// Reinforcement learning works by being rewarded for achieving a goal.  It then randomly
+/// Reinforcement learning works by an agent being rewarded for achieving a goal.  The agent randomly
 /// takes actions, according to the rules of the game, and gains experience, observing what rewards
-/// it gets from taking what actions.  The amount of time it spends exploring new actions vs the time
+/// it gets from taking what actions.  It is capable of learning immediate and delayed reward by allocating
+/// the reward to the history of actions taken to reach such a state.  It cannot learn if it exclusively
+/// uses its experience because it starts out with none.  
+/// 
+/// The amount of time it spends exploring new actions vs the time
 /// it leverages its own experience is the exploration/exploitation tradeoff.  As we train we will
 /// reduce the exploration to only some small amount, so it mostly uses its experience.
 /// 
@@ -112,19 +116,18 @@ namespace AIPlaysTicTacToe
                 
                 while (true)
                 {
-                    //Ask player 1 to move
+                    //Step 1: Ask player 1 to move
                     int action = agent1.DecideMove(board);
 
                     //Step 2: Make move, returns observation of environment
                     var P1_won = board.Move(action, 1);
                     var P1_cat = board.GetAvailableMoves().Count == 0;
 
-                    //In this flavor of RL I will only assess rewards at the end of the game.
-
                     if (interactive)
                     {
                         Console.Clear();
-                        DrawBoard(board, agent1);
+                        board.DrawBoard(board);
+                        ((Agent)agent2).DisplayQTable(board);
 
                         if (P1_won)
                             Console.WriteLine("Won");
@@ -134,7 +137,8 @@ namespace AIPlaysTicTacToe
                             Console.ReadKey(true);
                     }
 
-                    //If game is over then end
+                    //Step 3: Assign rewards based upon the outcome of the game.
+                    //Notice that in this impelementation we assign rewards at the end of the game.
                     if (P1_won)
                     {
                         agent1.AssignReward(1.0);
@@ -174,7 +178,8 @@ namespace AIPlaysTicTacToe
                     if (interactive)
                     {
                         Console.Clear();
-                        DrawBoard(board, agent2);
+                        board.DrawBoard(board);
+                        ((Agent)agent1).DisplayQTable(board);
 
                         if (P2_won)
                             Console.WriteLine("Lost");
@@ -204,46 +209,6 @@ namespace AIPlaysTicTacToe
 
             Console.ReadKey();
         }
-
-        
-
-
-        /// <summary>
-        /// Utility method to draw the board.  Also shows the Q learning table rewards.
-        /// </summary>
-        /// <param name="board"></param>
-        public static void DrawBoard(Board board, Agent agent)
-        {
-            var map = " XO".ToCharArray();
-            
-            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 0)], map[board.Get(1, 0)], map[board.Get(2, 0)]);
-            Console.WriteLine("-----------");
-            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 1)], map[board.Get(1, 1)], map[board.Get(2, 1)]);
-            Console.WriteLine("-----------");
-            Console.WriteLine(" {0} | {1} | {2}", map[board.Get(0, 2)], map[board.Get(1, 2)], map[board.Get(2, 2)]);
-            Console.WriteLine("\n");
-
-            //Display a heatmap
-
-            for (int y = 0; y < board.Height; y++)
-            { 
-                for (int x = 0; x < board.Width; x++)
-                {
-                    if (board.Get(x,y) == 0)
-                    {
-                        //get Q reward for each board, action
-                        var reward = agent.Q[board.GetHashCode(), board.XYToAction(x, y)];
-                        Console.Write("{0:0.0000}    ", reward);
-                    } else
-                    {
-                        Console.Write("n/a       ");
-                    }
-                    
-                }
-                Console.WriteLine("\n--------- --------- --------- ");
-            }
-        }
-
 
         
     }

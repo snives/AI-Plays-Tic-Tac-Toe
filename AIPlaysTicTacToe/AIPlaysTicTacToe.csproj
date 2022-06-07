@@ -31,6 +31,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>AIPlaysTicTacToe.PlayVsRandom</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -44,8 +47,11 @@
   <ItemGroup>
     <Compile Include="Agent.cs" />
     <Compile Include="Board.cs" />
+    <Compile Include="IAgent.cs" />
+    <Compile Include="PlayVsRandom.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RandomAgent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
