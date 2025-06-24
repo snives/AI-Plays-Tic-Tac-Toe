@@ -48,4 +48,19 @@ Notice how after each move, it effectively pushes a portion of the incremental a
 With tic-tac-toe the board is simple and thus the Q table has a finite number of possible states.
 
 
+## Pros/Cons
+Pros:
+    - Learns the optimal policy without supervision
+    - The feedback it learns over time prevent it from making the same mistakes.
+    - Q-learning stores successful actions which leads to better decisions when facing similar circumstances.
+Cons:
+    - Exploration is random and may be less efficient at finding the optimal policy than a model-aware framework.
+    - A large state and action space suffers from the curse of dimensionality and thus may require significant space.
+    - It may be slow at learning requiring a significant amount of data to train.
+
+## Summary
+
+Using RL the agent learns the optimal policy without supervision and without a model of the environment.  
+It learns through random exploration and immediate and/or delayed feedback over many iterations.
+It's ideal for achieving super-human performance on games and simulations which offer unlimited training data.
 
