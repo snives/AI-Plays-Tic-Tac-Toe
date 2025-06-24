@@ -1,6 +1,7 @@
-# AI-Plays-Tic-Tac-Toe
+# AI Plays Tic-Tac-Toe
 
-This project demonstrates the use of model free [reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) using a tabular solution.
+This project demonstrates the use of model free [reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) where an agent with no prior knowledge
+of the game, plays against itself, learning, until it achieves super-human skill.  I implemented with tic-tac-toe as a simple game so as to place a focus on RL and not so much on game mechanics.
 
 ## Reinforcement learning (RL)
 RL works by an agent making an action, and is rewarded for achieving a goal.  The agent randomly
